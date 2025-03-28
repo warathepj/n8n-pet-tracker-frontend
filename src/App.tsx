@@ -20,7 +20,7 @@ function calculateDistance(lat1, lon1, lat2, lon2) {
 }
 
 export default function App() {
-  const [homePosition] = useState({ lat: 51.505, lng: -0.09 });
+  const [homePosition] = useState({ lat: 14.524905435350691, lng: 101.38315173213998 });
   const [petPosition, setPetPosition] = useState(homePosition);
   const { toast } = useToast();
 
