@@ -4,6 +4,10 @@ import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import { useEffect, useState } from 'react'
 import geofenceData from '../geofence.json'
+import * as turf from '@turf/turf'
+import { useToast } from '../hooks/use-toast'
+import { AlertToast, AlertToastProvider, AlertToastViewport, AlertToastClose } from '@/components/ui/alert-toast'
+import ReactDOM from 'react-dom'
 
 const icon = L.icon({
   iconUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png',
@@ -12,10 +16,57 @@ const icon = L.icon({
 
 function DraggableMarker({ position, setPosition }) {
   const map = useMap()
+  const { toast } = useToast()
 
-  useEffect(() => {
-    map.flyTo(position, map.getZoom())
-  }, [position])
+  const showAlertToast = async (newPos) => {
+    const alertRoot = document.createElement('div')
+    document.body.appendChild(alertRoot)
+    
+    // Send alert to backend
+    try {
+      await fetch('http://localhost:3000/publish', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          message: 'Pet outside safe zone',
+          location: {
+            lat: newPos.lat,
+            lng: newPos.lng
+          }
+        }),
+      });
+    } catch (error) {
+      console.error('Error sending alert to backend:', error);
+    }
+    
+    const alert = (
+      <AlertToastProvider swipeDirection="left">
+        <AlertToast className="text-red-600 font-semibold border-red-600 bg-white">
+          <div>
+            <h2 className="text-lg font-semibold">Pets outside the area</h2>
+            <p>Your pet has left the designated safe zone!</p>
+          </div>
+          <AlertToastClose />
+        </AlertToast>
+        <AlertToastViewport />
+      </AlertToastProvider>
+    )
+    
+    ReactDOM.render(alert, alertRoot)
+    
+    setTimeout(() => {
+      ReactDOM.unmountComponentAtNode(alertRoot)
+      document.body.removeChild(alertRoot)
+    }, 5000)
+  }
+
+  const isPointInGeofence = (point) => {
+    const turfPoint = turf.point([point.lng, point.lat])
+    const geofencePolygon = turf.polygon(geofenceData.features[0].geometry.coordinates)
+    return turf.booleanPointInPolygon(turfPoint, geofencePolygon)
+  }
 
   return (
     <Marker
@@ -26,6 +77,15 @@ function DraggableMarker({ position, setPosition }) {
         dragend: (e) => {
           const newPos = e.target.getLatLng()
           setPosition(newPos)
+          
+          if (!isPointInGeofence(newPos)) {
+            showAlertToast(newPos)
+          } else {
+            toast({
+              title: "Location Updated",
+              description: "Pet's location has been updated",
+            })
+          }
         },
       }}
     />

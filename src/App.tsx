@@ -4,6 +4,7 @@ import { PetMap } from "./components/PetMap";
 import { PetInfoCard } from "./components/PetInfoCard";
 import { Toaster } from "./components/ui/toaster";
 import { useToast } from "./components/ui/use-toast";
+import { AlertToastProvider } from "@/components/ui/alert-toast";
 
 function calculateDistance(lat1, lon1, lat2, lon2) {
   const R = 6371;
@@ -41,14 +42,16 @@ export default function App() {
 
   return (
     <div className="min-h-screen">
-      <PetNavbar />
-      <main className="container mx-auto p-4">
-        <div className="grid gap-4 md:grid-cols-2">
-          <PetMap position={petPosition} setPosition={setPetPosition} />
-          <PetInfoCard distance={distance} />
-        </div>
-      </main>
-      <Toaster />
+      <AlertToastProvider>
+        <PetNavbar />
+        <main className="container mx-auto p-4">
+          <div className="grid gap-4 md:grid-cols-2">
+            <PetMap position={petPosition} setPosition={setPetPosition} />
+            <PetInfoCard distance={distance} />
+          </div>
+        </main>
+        <Toaster />
+      </AlertToastProvider>
     </div>
   );
 }
